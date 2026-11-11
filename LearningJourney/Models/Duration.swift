@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftUI
 // lists the only three vaild choices
 //CaseIterable adds Duration.allCases, which the Picker uses to build its Week / Month / Year options without writing them twice
 //Codeale for saving goals
@@ -38,14 +37,5 @@ enum Duration: String, CaseIterable, Codable {
         case .year:  component = .year
         }
         return Calendar.current.date(byAdding: component, value: 1, to: start)
-    }
-}
-#Preview {
-    let start = Calendar.current.startOfDay(for: .now)
-    VStack {
-        ForEach(Duration.allCases, id: \.self) { duration in
-            let end = duration.endDate(from: start)
-            Text("\(duration.rawValue): \(duration.freezeLimit) freezes, ends \(end?.formatted(date: .abbreviated, time: .omitted) ?? "nil")")
-        }
     }
 }
