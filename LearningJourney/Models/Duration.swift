@@ -27,14 +27,7 @@ enum Duration: String, CaseIterable, Codable {
             return 96
         }
     }
-    // text shown to the user, separate from rawValue (which is used for saving)
-    var title: String {
-        switch self {
-        case .week:  return "Week"
-        case .month: return "Month"
-        case .year:  return "Year"
-        }
-    }
+    
     
     //If a goal starts on this date, when does it end?
     func endDate(from start: Date) -> Date? {
@@ -52,7 +45,7 @@ enum Duration: String, CaseIterable, Codable {
     VStack {
         ForEach(Duration.allCases, id: \.self) { duration in
             let end = duration.endDate(from: start)
-            Text("\(duration.title): \(duration.freezeLimit) freezes, ends \(end?.formatted(date: .abbreviated, time: .omitted) ?? "nil")")
+            Text("\(duration.rawValue): \(duration.freezeLimit) freezes, ends \(end?.formatted(date: .abbreviated, time: .omitted) ?? "nil")")
         }
     }
 }
