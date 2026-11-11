@@ -6,3 +6,9 @@
 //
 
 import Foundation
+//Codable: save and load logs later
+//Equatable: to compare logs with ==
+struct DayLog: Codable, Equatable {
+    let date: Date
+    let status: DayStatus
+}
