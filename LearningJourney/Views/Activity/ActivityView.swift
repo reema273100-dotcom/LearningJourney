@@ -7,19 +7,10 @@
 import SwiftUI
 
 struct ActivityView: View {
-    // TEMP: fake data, replaced by ActivityViewModel later
-    private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
-    private let dayNumbers = [20, 21, 22, 23, 24, 25, 26]
-    private let todayIndex = 4
-    private let learnedCount = 4
-    private let frozenCount = 0
-    private let freezesUsed = 0
-    private let freezeLimit = 2
-    
-    
+    let viewModel:ActivityViewModel
     var body: some View {
         VStack(spacing: 24) {
-            // header, week strip, counters, buttons
+            // header, week strip
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Activity")
@@ -29,7 +20,7 @@ struct ActivityView: View {
                     Spacer()
                     
                     Button {
-                        // no action yet: opens the Calendar page later
+                        
                     } label: {
                         Image(systemName: "calendar")
                             .foregroundStyle(Color.white)
@@ -38,7 +29,7 @@ struct ActivityView: View {
                     }
                     
                     Button {
-                        // no action yet: opens Change Goal later
+                        
                     } label: {
                         Image(systemName: "pencil.and.outline").foregroundStyle(Color.white)
                             .frame(width: 44, height: 44)
@@ -46,75 +37,131 @@ struct ActivityView: View {
                     }
                 }
                 
-                Text("Thursday, 24 October") // TEMP: real date comes from the ViewModel
+                Text(viewModel.dateText)
                     .foregroundStyle(.secondary)
-                
-                
             }
+            
             HStack {
                 //repeats the column seven times
-                ForEach(0..<7, id: \.self) { index in
-                    VStack(spacing: 8) {
-                        Text(weekdays[index])
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        
-                        Text("\(dayNumbers[index])")
-                            .font(.title3)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                index < todayIndex ? Color.orange.opacity(0.2) : (index == todayIndex ? Color.orange : Color.clear),
-                                in: Circle()
-                            ) // TEMP: this decision moves to the ViewModel
-                            .foregroundStyle(index == todayIndex ? .white : (index < todayIndex ? .orange : .white))
+                HStack {
+                    ForEach(viewModel.weekDays) { day in
+                        VStack(spacing: 8) {
+                            Text(day.letter)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+
+                            Text("\(day.number)")
+                                .font(.title3)
+                                .frame(width: 44, height: 44)
+                                .background(circleColor(for: day.state), in: Circle())
+                                .foregroundStyle(numberColor(for: day.state))
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                 }
             }
             HStack(spacing: 16) {
-                CounterCardView(icon: "flame.fill", color: .orange, value: "\(learnedCount) days", label: "Learned")
-                CounterCardView(icon: "snowflake", color: .cyan, value: "\(frozenCount) days", label: "Frozen")
+                CounterCardView(icon: "flame.fill", color: .orange,  value: viewModel.learnedText, label: "Learned")
+                CounterCardView(icon: "snowflake", color: .cyan,  value: viewModel.frozenText, label: "Frozen")
             }
             
             VStack(spacing: 40) {
                 Button {
-                    // no action yet: logLearned() in the ViewModel later
+                    viewModel.logLearned()
                 } label: {
                     Circle()
                         .fill(Color.orange) // TEMP: color
                         .aspectRatio(1, contentMode: .fit)
                         .overlay {
-                            Text("Log as Learned") // TEMP: wording moves to the ViewModel
+                            Text(viewModel.logButtonTitle)
                                 .font(.headline)
                                 .foregroundStyle(Color.white)
                         }
                 }
+                .disabled(!viewModel.canLog)
                 VStack(spacing: 12) {
                     Button {
-                        // no action yet: freezeToday() in the ViewModel later
+                        viewModel.freezeToday()
                     } label: {
-                        Text("Freeze for a day") // TEMP: wording moves to the ViewModel
+                        Text(viewModel.freezeButtonTitle)
                             .font(.headline)
                             .foregroundStyle(Color.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
-                            .background(Color.cyan, in: Capsule()) // TEMP: color
+                            .background(Color.cyan, in: Capsule())
                     }
-                    
-                    Text("\(freezesUsed) out of \(freezeLimit) Freezes used") // TEMP: wording moves to the ViewModel
+                    .disabled(!viewModel.canFreeze)
+                    Text(viewModel.freezeCaption)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
             .padding(.horizontal, 40)
-            
+            Spacer()
         }
-        .padding(.horizontal, 20);
+        .padding(.horizontal, 20)
+    }
+}
+private func circleColor(for state: DayState) -> Color {
+    switch state {
+    case .learned: return Color.orange.opacity(0.2) // TEMP: color
+    case .frozen:  return Color.cyan.opacity(0.2)   // TEMP: color
+    case .today:   return Color.orange              // TEMP: color
+    case .none:    return Color.clear
     }
 }
 
+private func numberColor(for state: DayState) -> Color {
+    switch state {
+    case .learned: return Color.orange // TEMP: color
+    case .frozen:  return Color.cyan   // TEMP: color
+    case .today:   return Color.white
+    case .none:    return Color.primary
+    }
+}
 
-#Preview {
-    ActivityView()
+private func previewViewModel(today: DayStatus?, earlierFrozen: Int = 0) -> ActivityViewModel {
+    let calendar = Calendar.current
+    let start = calendar.startOfDay(for: .now)
+    var logs: [DayLog] = []
+
+    // today's entry, if any
+    if let today {
+        logs.append(DayLog(date: .now, status: today))
+    }
+
+    // four earlier days: the first `earlierFrozen` of them are frozen, the rest learned
+    for offset in 1...4 {
+        let date = calendar.date(byAdding: .day, value: -offset, to: start)!
+        let status: DayStatus = offset <= earlierFrozen ? .frozen : .learned
+        logs.append(DayLog(date: date, status: status))
+    }
+
+    let goalStart = calendar.date(byAdding: .day, value: -4, to: start)!
+    let goal = Goal(subject: "Swift", duration: .week, startDate: goalStart, logs: logs)
+    return ActivityViewModel(goal: goal)
+}
+#Preview("1 No entry today") {
+    ActivityView(viewModel: previewViewModel(today: nil))
+        .preferredColorScheme(.dark)
+}
+
+#Preview("2 Learned today") {
+    ActivityView(viewModel: previewViewModel(today: .learned))
+        .preferredColorScheme(.dark)
+}
+
+#Preview("3 Frozen today") {
+    ActivityView(viewModel: previewViewModel(today: .frozen))
+        .preferredColorScheme(.dark)
+}
+
+#Preview("4 Learned today, limit reached") {
+    ActivityView(viewModel: previewViewModel(today: .learned, earlierFrozen: 2))
+        .preferredColorScheme(.dark)
+}
+
+#Preview("5 Frozen today, limit reached") {
+    ActivityView(viewModel: previewViewModel(today: .frozen, earlierFrozen: 1))
         .preferredColorScheme(.dark)
 }
