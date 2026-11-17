@@ -27,7 +27,7 @@ struct CounterCardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .background(Color.gray.opacity(0.2), in: RoundedRectangle(cornerRadius: 28))
+        .glassEffect(in: RoundedRectangle(cornerRadius: 28))
         
         // use icon, color, value, and label instead of the hardcoded values
     }

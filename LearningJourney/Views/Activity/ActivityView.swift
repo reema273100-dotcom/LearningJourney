@@ -8,6 +8,8 @@ import SwiftUI
 
 struct ActivityView: View {
     let viewModel:ActivityViewModel
+    @State private var showGoalEditor = false
+
     var body: some View {
         VStack(spacing: 24) {
             // header, week strip
@@ -19,124 +21,161 @@ struct ActivityView: View {
                     
                     Spacer()
                     
-                    Button {
-                        
+                    NavigationLink {
+                        CalendarView(viewModel: CalendarViewModel(goal: viewModel.goal))
                     } label: {
                         Image(systemName: "calendar")
                             .foregroundStyle(Color.white)
                             .frame(width: 44, height: 44)
-                            .background(Color.gray.opacity(0.3), in: Circle())
+                            .glassEffect(.regular.interactive(), in: Circle())
                     }
                     
                     Button {
-                        
+                        showGoalEditor = true
+
                     } label: {
                         Image(systemName: "pencil.and.outline").foregroundStyle(Color.white)
                             .frame(width: 44, height: 44)
-                            .background(Color.gray.opacity(0.3), in: Circle())
+                            .glassEffect(.regular.interactive(), in: Circle())
                     }
+                    
                 }
                 
                 Text(viewModel.dateText)
                     .foregroundStyle(.secondary)
             }
-            
             HStack {
-                //repeats the column seven times
-                HStack {
-                    ForEach(viewModel.weekDays) { day in
-                        VStack(spacing: 8) {
-                            Text(day.letter)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-
-                            Text("\(day.number)")
-                                .font(.title3)
-                                .frame(width: 44, height: 44)
-                                .background(circleColor(for: day.state), in: Circle())
-                                .foregroundStyle(numberColor(for: day.state))
-                        }
-                        .frame(maxWidth: .infinity)
+                ForEach(viewModel.weekDays) { day in
+                    VStack(spacing: 8) {
+                        Text(day.letter)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        
+                        Text("\(day.number)")
+                            .font(.title3)
+                            .frame(width: 44, height: 44)
+                            .background(day.state.circleColor, in: Circle())
+                            .foregroundStyle(day.state.numberColor)
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
+            
             HStack(spacing: 16) {
                 CounterCardView(icon: "flame.fill", color: .orange,  value: viewModel.learnedText, label: "Learned")
                 CounterCardView(icon: "snowflake", color: .cyan,  value: viewModel.frozenText, label: "Frozen")
             }
             
-            VStack(spacing: 40) {
-                Button {
-                    viewModel.logLearned()
-                } label: {
-                    Circle()
-                        .fill(Color.orange) // TEMP: color
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Text(viewModel.logButtonTitle)
-                                .font(.headline)
-                                .foregroundStyle(Color.white)
-                        }
-                }
-                .disabled(!viewModel.canLog)
-                VStack(spacing: 12) {
-                    Button {
-                        viewModel.freezeToday()
-                    } label: {
-                        Text(viewModel.freezeButtonTitle)
-                            .font(.headline)
-                            .foregroundStyle(Color.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
-                            .background(Color.cyan, in: Capsule())
-                    }
-                    .disabled(!viewModel.canFreeze)
-                    Text(viewModel.freezeCaption)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+            if viewModel.goalState == .active {
+                actionArea
+            } else {
+                Spacer()
+                endState
             }
-            .padding(.horizontal, 40)
             Spacer()
+            
         }
         .padding(.horizontal, 20)
+        .navigationDestination(isPresented: $showGoalEditor) {
+            GoalEditView(goal: viewModel.goal, needsConfirmation: viewModel.goalState == .active) { newGoal in
+                viewModel.replaceGoal(with: newGoal)
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
-}
-private func circleColor(for state: DayState) -> Color {
-    switch state {
-    case .learned: return Color.orange.opacity(0.2) // TEMP: color
-    case .frozen:  return Color.cyan.opacity(0.2)   // TEMP: color
-    case .today:   return Color.orange              // TEMP: color
-    case .none:    return Color.clear
+    
+    private var actionArea: some View {
+        VStack(spacing: 40) {
+            Button {
+                viewModel.logLearned()
+            } label: {
+                Circle()
+                    .fill(Color.orange) // TEMP: color
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay {
+                        Text(viewModel.logButtonTitle)
+                            .font(.headline)
+                            .foregroundStyle(Color.white)
+                    }
+            }
+            .disabled(!viewModel.canLog)
+            VStack(spacing: 12) {
+                Button {
+                    viewModel.freezeToday()
+                } label: {
+                    Text(viewModel.freezeButtonTitle)
+                        .font(.headline)
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .glassEffect(.regular.tint(.cyan).interactive(), in: Capsule())
+                }
+                .disabled(!viewModel.canFreeze)
+                Text(viewModel.freezeCaption)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 40) 
+    }
+    private var endState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: viewModel.goalState == .completed ? "hands.clap.fill" : "xmark.seal.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.orange) // TEMP: color
+            Text(viewModel.endTitle).font(.headline)
+            Text(viewModel.endSubtitle).font(.subheadline).foregroundStyle(.secondary)
+            Button {
+                showGoalEditor = true
+            } label: {
+                Label(viewModel.setGoalTitle, systemImage: "pencil.and.outline")
+                    .font(.headline)
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                Circle().glassEffect(.regular.tint(.orange).interactive())
+            }
+        }
     }
 }
 
-private func numberColor(for state: DayState) -> Color {
-    switch state {
-    case .learned: return Color.orange // TEMP: color
-    case .frozen:  return Color.cyan   // TEMP: color
-    case .today:   return Color.white
-    case .none:    return Color.primary
+private func scenarioViewModel(
+    duration: Duration = .week,
+    startedDaysAgo: Int,
+    entries: [(hoursAgo: Double, status: DayStatus)]
+) -> ActivityViewModel {
+    let calendar = Calendar.current
+    let start = calendar.date(
+        byAdding: .day,
+        value: -startedDaysAgo,
+        to: calendar.startOfDay(for: .now)
+    )!
+    
+    let logs = entries.map { entry in
+        DayLog(date: Date.now.addingTimeInterval(-entry.hoursAgo * 3600), status: entry.status)
     }
+    
+    let goal = Goal(subject: "Swift", duration: duration, startDate: start, logs: logs)
+    return ActivityViewModel(goal: goal)
 }
 
 private func previewViewModel(today: DayStatus?, earlierFrozen: Int = 0) -> ActivityViewModel {
     let calendar = Calendar.current
     let start = calendar.startOfDay(for: .now)
     var logs: [DayLog] = []
-
+    
     // today's entry, if any
     if let today {
         logs.append(DayLog(date: .now, status: today))
     }
-
+    
     // four earlier days: the first `earlierFrozen` of them are frozen, the rest learned
     for offset in 1...4 {
         let date = calendar.date(byAdding: .day, value: -offset, to: start)!
         let status: DayStatus = offset <= earlierFrozen ? .frozen : .learned
         logs.append(DayLog(date: date, status: status))
     }
-
+    
     let goalStart = calendar.date(byAdding: .day, value: -4, to: start)!
     let goal = Goal(subject: "Swift", duration: .week, startDate: goalStart, logs: logs)
     return ActivityViewModel(goal: goal)
@@ -147,21 +186,97 @@ private func previewViewModel(today: DayStatus?, earlierFrozen: Int = 0) -> Acti
 }
 
 #Preview("2 Learned today") {
-    ActivityView(viewModel: previewViewModel(today: .learned))
+    NavigationStack {
+        ActivityView(viewModel: previewViewModel(today: .learned))
+    }
         .preferredColorScheme(.dark)
 }
 
 #Preview("3 Frozen today") {
-    ActivityView(viewModel: previewViewModel(today: .frozen))
+    NavigationStack {
+        ActivityView(viewModel: previewViewModel(today: .frozen))
+    }
         .preferredColorScheme(.dark)
 }
 
 #Preview("4 Learned today, limit reached") {
-    ActivityView(viewModel: previewViewModel(today: .learned, earlierFrozen: 2))
+    NavigationStack {
+        ActivityView(viewModel: previewViewModel(today: .learned, earlierFrozen: 2))
+    }
         .preferredColorScheme(.dark)
 }
 
 #Preview("5 Frozen today, limit reached") {
-    ActivityView(viewModel: previewViewModel(today: .frozen, earlierFrozen: 1))
+    NavigationStack {
+        ActivityView(viewModel: previewViewModel(today: .frozen, earlierFrozen: 1))
+    }
+        .preferredColorScheme(.dark)
+}
+#Preview("A active: started today, no entries") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 0, entries: []))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("B active: started yesterday, no entries") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 1, entries: []))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("C failed: started 3 days ago, no entries") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 3, entries: []))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("D active: last entry 31h ago") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 4, entries: [(31, .learned)]))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("E failed: last entry 33h ago") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 4, entries: [(33, .learned)]))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("F failed: end date passed") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 8, entries: [(1, .learned)]))
+    }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("G completed: all 7 days covered") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 6, entries: [
+            (1, .learned), (2, .frozen), (3, .learned), (4, .learned),
+            (5, .learned), (6, .learned), (7, .learned)
+        ]))
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("H completed beats failed") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(startedDaysAgo: 10, entries: [
+            (100, .learned), (101, .learned), (102, .learned), (103, .learned),
+            (104, .learned), (105, .learned), (106, .learned)
+        ]))
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("I active: month goal, 10 days in") {
+    NavigationStack {
+        ActivityView(viewModel: scenarioViewModel(duration: .month, startedDaysAgo: 10, entries: [(5, .learned)]))
+    }
         .preferredColorScheme(.dark)
 }

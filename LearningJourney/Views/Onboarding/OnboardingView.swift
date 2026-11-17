@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @State private var viewModel = OnboardingViewModel()
+        let onStart: (Goal) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Image(systemName: "flame.fill") // TEMP: check symbol
@@ -26,33 +28,38 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     
             }
-            GoalFormView()
+            GoalFormView(subject: $viewModel.subject, duration: $viewModel.duration)
                 .padding(.top, 20)
+
             Spacer()
 
             VStack(spacing: 12) {
                 Button {
-                    // no action yet: starts the goal later
+                    onStart(viewModel.makeGoal())
                 } label: {
                     Text("Start Learning") // TEMP: wording
                         .font(.headline)
                         .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
-                        .background(Color.orange, in: Capsule()) // TEMP: color
+                        .glassEffect(.regular.tint(.orange).interactive(), in: Capsule())
                 }
                 .padding(.horizontal, 80)
+                
 
                 Text("You can edit your goal later") // TEMP: wording
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                
             }
+            
         }
         .padding(.horizontal, 20)
+        
     }
 }
 
 #Preview {
-    OnboardingView()
+    OnboardingView { _ in }
         .preferredColorScheme(.dark)
 }

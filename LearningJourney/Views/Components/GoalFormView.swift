@@ -7,8 +7,8 @@
 import SwiftUI
 
 struct GoalFormView: View {
-    @State private var subject = "" // TEMP: owned by the ViewModel later
-    @State private var duration: Duration = .week // TEMP: owned by the ViewModel later
+    @Binding var subject: String
+    @Binding var duration: Duration
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -30,20 +30,14 @@ struct GoalFormView: View {
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 12)
                                 .foregroundStyle(textColor(for: option))
-                                .background(pillColor(for: option), in: Capsule())
+                                .glassEffect(pillGlass(for: option), in: Capsule())
                         }
                     }
                 }
             }
         }
     }
-    private func pillColor(for option: Duration) -> Color {
-        if option == duration{
-            return Color.orange
-        } else {
-            return Color.gray.opacity(0.3)
-        }
-    }
+    
 
     private func textColor(for option: Duration) -> Color {
         if option == duration{
@@ -52,11 +46,19 @@ struct GoalFormView: View {
             return Color.gray
         }
     }
-    
+    private func pillGlass(for option: Duration) -> Glass {
+        if option == duration {
+            return .regular.tint(.orange)
+        } else {
+            return .regular
+        }
+    }
 }
 
+
 #Preview {
-    GoalFormView()
+    GoalFormView(subject: .constant(""), duration: .constant(.week))
         .preferredColorScheme(.dark)
         .padding(.horizontal, 20)
 }
+

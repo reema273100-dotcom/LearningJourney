@@ -10,6 +10,7 @@ import Observation
 
 @Observable
 final class ActivityViewModel {
+    private let storage = StorageService()
     var goal: Goal
     
     init(goal: Goal) {
@@ -33,11 +34,11 @@ final class ActivityViewModel {
         todayLog?.status == .frozen ? "Frozen for a day" : "Freeze for a day"
     }
     var canLog: Bool {
-        todayLog?.status != .learned
-        
+        goalState == .active && todayLog?.status != .learned
     }
+
     var canFreeze: Bool {
-        todayLog?.status != .frozen && freezesUsed < freezeLimit
+        goalState == .active && todayLog?.status != .frozen && freezesUsed < freezeLimit
     }
     
     var freezesUsed: Int {
@@ -61,6 +62,8 @@ final class ActivityViewModel {
     private func setToday(_ status: DayStatus) {
         goal.logs.removeAll{ Calendar.current.isDate($0.date, inSameDayAs: .now)}
         goal.logs.append(DayLog(date: .now, status: status))
+        storage.save(goal)
+
     }
     
     var weekDays: [WeekDay] {
@@ -117,5 +120,44 @@ final class ActivityViewModel {
             var frozenText: String {
                 daysText(frozenCount)
             }
+    
+    private var totalDays: Int {
+        guard let end = goal.endDate else { return 0 }
+        return Calendar.current.dateComponents([.day], from: goal.startDate, to: end).day ?? 0
+    }
+    private var firstDayEnd: Date {
+        Calendar.current.date(byAdding: .day, value: 1, to: goal.startDate) ?? goal.startDate
+    }
+
+    var goalState: GoalState {
+        if totalDays > 0 && goal.logs.count >= totalDays {
+            return .completed
+        }
+
+        if let end = goal.endDate, Date.now >= end {
+            return .failed
+        }
+
+        let lastEntry = goal.logs.map(\.date).max() ?? firstDayEnd
+        if Date.now.timeIntervalSince(lastEntry) > 32 * 60 * 60 {
+            return .failed
+        }
+
+        return .active
+    }
+    var endTitle: String {
+        goalState == .completed ? "Well done!" : "You didn't reach your goal this time."
+    }
+
+    var endSubtitle: String {
+        goalState == .completed ? "Ready for your next goal?" : "Want to set another goal?"
+    }
+
+    var setGoalTitle: String { "Set a goal" }
+
+    func replaceGoal(with newGoal: Goal) {
+        goal = newGoal
+        storage.save(goal)
+    }
 }
         

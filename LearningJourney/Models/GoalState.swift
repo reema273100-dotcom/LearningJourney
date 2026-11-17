@@ -6,3 +6,9 @@
 //
 
 import Foundation
+
+enum GoalState {
+    case active
+    case completed
+    case failed
+}
