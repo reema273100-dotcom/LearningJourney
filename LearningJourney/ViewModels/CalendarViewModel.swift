@@ -23,9 +23,12 @@ struct MonthSection: Identifiable {
 @Observable
 final class CalendarViewModel {
     let goal: Goal
-
+    
     init(goal: Goal) {
         self.goal = goal
+    }
+    private var allLogs: [DayLog] {
+        goal.logs + goal.pastLogs
     }
 
     var weekdayHeaders: [String] {
@@ -35,9 +38,11 @@ final class CalendarViewModel {
     var months: [MonthSection] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
-        let lastDay = goal.endDate.flatMap { calendar.date(byAdding: .day, value: -1, to: $0) } ?? today
-        guard var monthStart = calendar.dateInterval(of: .month, for: goal.startDate)?.start else { return [] }
-        let lastMonthStart = calendar.dateInterval(of: .month, for: lastDay)?.start ?? monthStart
+        
+        let earliest = ([goal.startDate] + goal.pastLogs.map(\.date)).min() ?? goal.startDate
+        guard var monthStart = calendar.dateInterval(of: .month, for: earliest)?.start else { return [] }
+        
+        let lastMonthStart = calendar.dateInterval(of: .month, for: today)?.start ?? monthStart
 
         var result: [MonthSection] = []
         while monthStart <= lastMonthStart {
@@ -70,7 +75,7 @@ final class CalendarViewModel {
 
     private func state(on date: Date, today: Date) -> DayState {
         let calendar = Calendar.current
-        let log = goal.logs.first { calendar.isDate($0.date, inSameDayAs: date) }
+        let log = allLogs.first { calendar.isDate($0.date, inSameDayAs: date) }
         if log?.status == .learned { return .learned }
         if log?.status == .frozen { return .frozen }
         if calendar.isDate(date, inSameDayAs: today) { return .today }

@@ -26,6 +26,7 @@ struct GoalEditView: View {
             Spacer()
         }
         .padding(.horizontal, 20)
+        .tint(.orange)
         .navigationTitle("Learning Goal") // TEMP: wording
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -37,6 +38,7 @@ struct GoalEditView: View {
                 }
             }
         }
+
         .alert("Update goal", isPresented: $showAlert) { // TEMP: wording
             Button("Dismiss", role: .cancel) { }
             Button("Update") { save() }
@@ -44,7 +46,7 @@ struct GoalEditView: View {
             Text("If you update now, your streak will start over.") // TEMP: wording
         }
     }
-
+        
     private func save() {
         onSave(viewModel.makeGoal())
         dismiss()

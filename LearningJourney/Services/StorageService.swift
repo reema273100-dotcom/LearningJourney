@@ -34,4 +34,7 @@ struct StorageService {
             print("STORAGE: save failed: \(error)")
         }
     }
+    func clear() {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
 }

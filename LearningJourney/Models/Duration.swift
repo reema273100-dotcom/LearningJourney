@@ -7,15 +7,14 @@
 
 import Foundation
 // lists the only three vaild choices
-//CaseIterable adds Duration.allCases, which the Picker uses to build its Week / Month / Year options without writing them twice
+//CaseIterable can loop over all cases
 //Codeale for saving goals
 enum Duration: String, CaseIterable, Codable {
     case week
     case month
     case year
     
-    //computed property, works out its answer each time from self
-    // switch self: looks at which case this Duration is. and returns the number
+    // How many freezes this length allows. Computed: nothing stored, the answer comes from self.
     var freezeLimit: Int {
         switch self {
         case .week:

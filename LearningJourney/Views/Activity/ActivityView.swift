@@ -69,8 +69,9 @@ struct ActivityView: View {
             if viewModel.goalState == .active {
                 actionArea
             } else {
-                Spacer()
+                
                 endState
+                    .padding(.top, 60)
             }
             Spacer()
             
@@ -89,14 +90,14 @@ struct ActivityView: View {
             Button {
                 viewModel.logLearned()
             } label: {
-                Circle()
-                    .fill(Color.orange) // TEMP: color
+                Color.clear
                     .aspectRatio(1, contentMode: .fit)
                     .overlay {
                         Text(viewModel.logButtonTitle)
                             .font(.headline)
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(viewModel.canLog ? Color.white : Color.gray)
                     }
+                    .glassEffect(logGlass, in: Circle())
             }
             .disabled(!viewModel.canLog)
             VStack(spacing: 12) {
@@ -105,10 +106,10 @@ struct ActivityView: View {
                 } label: {
                     Text(viewModel.freezeButtonTitle)
                         .font(.headline)
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(viewModel.canFreeze ? Color.white : Color.gray)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
-                        .glassEffect(.regular.tint(.cyan).interactive(), in: Capsule())
+                        .glassEffect(freezeGlass, in: Capsule())
                 }
                 .disabled(!viewModel.canFreeze)
                 Text(viewModel.freezeCaption)
@@ -116,7 +117,23 @@ struct ActivityView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 40) 
+        .padding(.horizontal, 40)
+        
+    }
+    private var logGlass: Glass {
+        if viewModel.canLog {
+            return Glass.regular.tint(.orange).interactive()
+        } else {
+            return Glass.regular
+        }
+    }
+
+    private var freezeGlass: Glass {
+        if viewModel.canFreeze {
+            return Glass.regular.tint(.cyan).interactive()
+        } else {
+            return Glass.regular
+        }
     }
     private var endState: some View {
         VStack(spacing: 16) {
@@ -133,7 +150,8 @@ struct ActivityView: View {
                     .foregroundStyle(Color.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
-                Circle().glassEffect(.regular.tint(.orange).interactive())
+                    .glassEffect(.regular.tint(.orange).interactive(), in: Capsule())
+
             }
         }
     }

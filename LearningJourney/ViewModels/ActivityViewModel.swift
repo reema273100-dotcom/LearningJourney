@@ -8,7 +8,7 @@
 import Foundation
 import Observation
 
-@Observable
+@Observable // SwiftUI redraws any view that READ a property when it changes
 final class ActivityViewModel {
     private let storage = StorageService()
     var goal: Goal
@@ -17,13 +17,25 @@ final class ActivityViewModel {
         self.goal = goal
     }
     
+    //Counters
     var learnedCount: Int {
         goal.logs.filter { $0.status == .learned }.count
     }
-    
     var frozenCount: Int {
         goal.logs.filter { $0.status == .frozen }.count
     }
+    var freezesUsed: Int {
+        frozenCount
+    }
+    var freezeLimit: Int {
+        goal.duration.freezeLimit
+    }
+    
+    var freezeCaption: String {
+        "\(freezesUsed) out of \(freezeLimit) Freezes used"
+    }
+    
+    //Today
     var todayLog: DayLog? {
         goal.logs.first { Calendar.current.isDate($0.date, inSameDayAs: .now) }
     }
@@ -41,16 +53,7 @@ final class ActivityViewModel {
         goalState == .active && todayLog?.status != .frozen && freezesUsed < freezeLimit
     }
     
-    var freezesUsed: Int {
-        frozenCount
-    }
-    var freezeLimit: Int {
-        goal.duration.freezeLimit
-    }
-    
-    var freezeCaption: String {
-        "\(freezesUsed) out of \(freezeLimit) Freezes used"
-    }
+    // Actions
     func logLearned() {
         guard canLog else { return }
         setToday(.learned)
@@ -61,11 +64,15 @@ final class ActivityViewModel {
     }
     private func setToday(_ status: DayStatus) {
         goal.logs.removeAll{ Calendar.current.isDate($0.date, inSameDayAs: .now)}
+        // 1) delete any entry from today. This is the REPLACE rule (a day can't be both).
+
         goal.logs.append(DayLog(date: .now, status: status))
+        // 2) add a fresh entry with the current time. The new time is when the user made the final choice.
+
         storage.save(goal)
 
     }
-    
+    //Week strip
     var weekDays: [WeekDay] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
@@ -77,19 +84,15 @@ final class ActivityViewModel {
             let log = goal.logs.first { calendar.isDate($0.date, inSameDayAs: date) }
             
             let state: DayState
-            // 1. if log?.status is .learned, the state is .learned
             if log?.status == .learned{
                 state = .learned
             }
-            // 2. if it is .frozen, the state is .frozen
             else if log?.status == .frozen{
                 state = .frozen
             }
-            // 3. otherwise, if the date is today, the state is .today
             else if calendar.isDate(date, inSameDayAs: today){
                 state = .today
             }
-            // 4. otherwise, the state is .none
             else {
                 state = .none
             }
@@ -103,8 +106,9 @@ final class ActivityViewModel {
             
         }
     }
+            // Texts
             var dateText: String {
-                let formatter = DateFormatter()
+                let formatter = DateFormatter()// turns a Date into text
                 formatter.dateFormat = "EEEE, d MMMM"
                 return formatter.string(from: .now)
             }
@@ -112,15 +116,14 @@ final class ActivityViewModel {
                 // "1 day" when count is 1, otherwise "<count> days"
                 count == 1 ? "1 day" : "\(count) days"
             }
-
             var learnedText: String {
                 daysText(learnedCount)
             }
-
             var frozenText: String {
                 daysText(frozenCount)
             }
     
+    // Goal State
     private var totalDays: Int {
         guard let end = goal.endDate else { return 0 }
         return Calendar.current.dateComponents([.day], from: goal.startDate, to: end).day ?? 0
@@ -145,6 +148,8 @@ final class ActivityViewModel {
 
         return .active
     }
+    
+   // End screen wording and goal replacement
     var endTitle: String {
         goalState == .completed ? "Well done!" : "You didn't reach your goal this time."
     }
@@ -156,7 +161,9 @@ final class ActivityViewModel {
     var setGoalTitle: String { "Set a goal" }
 
     func replaceGoal(with newGoal: Goal) {
-        goal = newGoal
+        var updated = newGoal
+        updated.pastLogs = goal.pastLogs + goal.logs
+        goal = updated
         storage.save(goal)
     }
 }

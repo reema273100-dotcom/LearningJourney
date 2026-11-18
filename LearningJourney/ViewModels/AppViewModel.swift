@@ -21,4 +21,12 @@ final class AppViewModel {
     func start(with goal: Goal) {
         activityViewModel = ActivityViewModel(goal: goal)
     }
+    func load(_ scenario: DemoScenario) {
+        activityViewModel = ActivityViewModel(goal: scenario.makeGoal())
+    }
+
+    func resetToOnboarding() {
+        storage.clear()
+        activityViewModel = nil
+    }
 }
