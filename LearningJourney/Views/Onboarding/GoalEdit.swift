@@ -38,7 +38,6 @@ struct GoalEditView: View {
                 }
             }
         }
-
         .alert("Update goal", isPresented: $showAlert) { // TEMP: wording
             Button("Dismiss", role: .cancel) { }
             Button("Update") { save() }

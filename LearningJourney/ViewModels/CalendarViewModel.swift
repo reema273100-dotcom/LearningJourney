@@ -13,7 +13,7 @@ struct CalendarDay: Identifiable {
     let number: Int?   // nil = empty cell before the 1st
     let state: DayState
 }
-
+// One month with its title and cells.
 struct MonthSection: Identifiable {
     let id: Date
     let title: String

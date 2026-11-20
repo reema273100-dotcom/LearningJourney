@@ -7,20 +7,17 @@
 
 import Foundation
 
-struct StorageService {
+struct StorageService { // a struct: it only holds a key name, no changing state
     private let key = "savedGoal"
 
     func load() -> Goal? {
         guard let data = UserDefaults.standard.data(forKey: key) else {
-            print("STORAGE: nothing saved")
             return nil
         }
         do {
             let goal = try JSONDecoder().decode(Goal.self, from: data)
-            print("STORAGE: loaded \(goal.subject), \(goal.logs.count) logs")
             return goal
         } catch {
-            print("STORAGE: load failed: \(error)")
             return nil
         }
     }
@@ -29,10 +26,8 @@ struct StorageService {
         do {
             let data = try JSONEncoder().encode(goal)
             UserDefaults.standard.set(data, forKey: key)
-            print("STORAGE: saved \(goal.subject), \(goal.logs.count) logs")
-        } catch {
-            print("STORAGE: save failed: \(error)")
-        }
+            
+        } catch {}
     }
     func clear() {
         UserDefaults.standard.removeObject(forKey: key)
